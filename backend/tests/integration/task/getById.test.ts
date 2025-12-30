@@ -5,6 +5,7 @@ import { Task } from '../../../src/domain/entities/Task'
 import { Project } from '../../../src/domain/entities/Project'
 import { createMockTaskRepository } from '../../helpers/mockTaskRepository'
 import { createMockProjectRepository } from '../../helpers/mockProjectRepository'
+import { createMockUserRepository } from '../../helpers/mockUserRepository'
 import { createTestAppWithTasks } from '../../helpers/createTestAppWithTasks'
 import { generateTestToken } from '../../helpers/generateTestToken'
 
@@ -12,6 +13,7 @@ describe('GET /tasks/:id - Get Task By ID', () => {
   let app: Application
   let taskRepository: ReturnType<typeof createMockTaskRepository>
   let projectRepository: ReturnType<typeof createMockProjectRepository>
+  let userRepository: ReturnType<typeof createMockUserRepository>
   let token: string
   const userId = 1
   const taskId = 1
@@ -20,7 +22,8 @@ describe('GET /tasks/:id - Get Task By ID', () => {
   beforeEach(() => {
     taskRepository = createMockTaskRepository()
     projectRepository = createMockProjectRepository()
-    app = createTestAppWithTasks(taskRepository, projectRepository)
+    userRepository = createMockUserRepository()
+    app = createTestAppWithTasks(taskRepository, projectRepository, userRepository)
     token = generateTestToken(userId, 'test@example.com')
   })
 

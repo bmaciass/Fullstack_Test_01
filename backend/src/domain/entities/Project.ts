@@ -277,13 +277,4 @@ export class Project {
     this._deletedAt = new Date()
     this._updatedAt = new Date()
   }
-
-  restore(): void {
-    if (!this.isDeleted) {
-      throw new ValidationError('Project is not deleted')
-    }
-
-    this._deletedAt = null
-    this._updatedAt = new Date()
-  }
 }

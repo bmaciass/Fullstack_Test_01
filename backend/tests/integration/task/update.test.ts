@@ -3,15 +3,18 @@ import request from 'supertest'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { Project } from '../../../src/domain/entities/Project'
 import { Task } from '../../../src/domain/entities/Task'
+import { User } from '../../../src/domain/entities/User'
 import { createTestAppWithTasks } from '../../helpers/createTestAppWithTasks'
 import { generateTestToken } from '../../helpers/generateTestToken'
 import { createMockProjectRepository } from '../../helpers/mockProjectRepository'
 import { createMockTaskRepository } from '../../helpers/mockTaskRepository'
+import { createMockUserRepository } from '../../helpers/mockUserRepository'
 
 describe('PATCH /tasks/:id - Update Task', () => {
   let app: Application
   let taskRepository: ReturnType<typeof createMockTaskRepository>
   let projectRepository: ReturnType<typeof createMockProjectRepository>
+  let userRepository: ReturnType<typeof createMockUserRepository>
   let token: string
   const userId = 1
   const taskId = 1
@@ -20,7 +23,8 @@ describe('PATCH /tasks/:id - Update Task', () => {
   beforeEach(() => {
     taskRepository = createMockTaskRepository()
     projectRepository = createMockProjectRepository()
-    app = createTestAppWithTasks(taskRepository, projectRepository)
+    userRepository = createMockUserRepository()
+    app = createTestAppWithTasks(taskRepository, projectRepository, userRepository)
     token = generateTestToken(userId, 'test@example.com')
   })
 
@@ -263,6 +267,325 @@ describe('PATCH /tasks/:id - Update Task', () => {
       })
 
     expect(response.status).toBe(200)
+    expect(taskRepository.save).toHaveBeenCalled()
+  })
+
+  it('should update task description successfully', async () => {
+    const existingTask = Task.reconstitute({
+      id: taskId,
+      name: 'Task Name',
+      description: 'Old description',
+      status: 'pending',
+      priority: 'low',
+      projectId,
+      assignedUserIds: [],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const project = Project.reconstitute({
+      id: projectId,
+      name: 'Test Project',
+      slug: 'test-project',
+      description: null,
+      createdById: userId,
+      memberIds: [],
+      taskIds: [taskId],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const updatedTask = Task.reconstitute({
+      id: existingTask.id,
+      name: existingTask.name,
+      description: 'Updated description with more details',
+      status: existingTask.status,
+      priority: existingTask.priority,
+      projectId: existingTask.projectId,
+      assignedUserIds: existingTask.assignedUserIds,
+      deletedAt: existingTask.deletedAt,
+      createdAt: existingTask.createdAt,
+      updatedAt: existingTask.updatedAt,
+    })
+
+    taskRepository.findById.mockResolvedValue(existingTask)
+    projectRepository.findById.mockResolvedValue(project)
+    taskRepository.save.mockResolvedValue(updatedTask)
+
+    const response = await request(app)
+      .patch(`/tasks/${taskId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        description: 'Updated description with more details',
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.description).toBe('Updated description with more details')
+    expect(taskRepository.save).toHaveBeenCalled()
+  })
+
+  it('should not update task when trying to set description to null', async () => {
+    const existingTask = Task.reconstitute({
+      id: taskId,
+      name: 'Task Name',
+      description: 'Some description',
+      status: 'pending',
+      priority: 'low',
+      projectId,
+      assignedUserIds: [],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const project = Project.reconstitute({
+      id: projectId,
+      name: 'Test Project',
+      slug: 'test-project',
+      description: null,
+      createdById: userId,
+      memberIds: [],
+      taskIds: [taskId],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const updatedTask = Task.reconstitute({
+      id: existingTask.id,
+      name: existingTask.name,
+      description: null,
+      status: existingTask.status,
+      priority: existingTask.priority,
+      projectId: existingTask.projectId,
+      assignedUserIds: existingTask.assignedUserIds,
+      deletedAt: existingTask.deletedAt,
+      createdAt: existingTask.createdAt,
+      updatedAt: existingTask.updatedAt,
+    })
+
+    taskRepository.findById.mockResolvedValue(existingTask)
+    projectRepository.findById.mockResolvedValue(project)
+    taskRepository.save.mockResolvedValue(updatedTask)
+
+    const response = await request(app)
+      .patch(`/tasks/${taskId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        description: null,
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should assign users to task when updating', async () => {
+    const member1 = User.reconstitute({
+      id: 2,
+      email: 'member1@example.com',
+      username: 'member1',
+      password: 'hashedpassword',
+      personId: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    })
+
+    const member2 = User.reconstitute({
+      id: 3,
+      email: 'member2@example.com',
+      username: 'member2',
+      password: 'hashedpassword',
+      personId: 3,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    })
+
+    const existingTask = Task.reconstitute({
+      id: taskId,
+      name: 'Task Name',
+      description: 'Description',
+      status: 'pending',
+      priority: 'low',
+      projectId,
+      assignedUserIds: [],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const project = Project.reconstitute({
+      id: projectId,
+      name: 'Test Project',
+      slug: 'test-project',
+      description: null,
+      createdById: userId,
+      memberIds: [],
+      taskIds: [taskId],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const updatedTask = Task.reconstitute({
+      id: existingTask.id,
+      name: existingTask.name,
+      description: existingTask.description,
+      status: existingTask.status,
+      priority: existingTask.priority,
+      projectId: existingTask.projectId,
+      assignedUserIds: [2, 3],
+      deletedAt: existingTask.deletedAt,
+      createdAt: existingTask.createdAt,
+      updatedAt: existingTask.updatedAt,
+    })
+
+    taskRepository.findById.mockResolvedValue(existingTask)
+    projectRepository.findById.mockResolvedValue(project)
+    userRepository.findByUsername.mockImplementation(async (username: string) => {
+      if (username === 'member1') return member1
+      if (username === 'member2') return member2
+      return null
+    })
+    taskRepository.save.mockResolvedValue(updatedTask)
+
+    const response = await request(app)
+      .patch(`/tasks/${taskId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        assignTo: [{ username: 'member1' }, { username: 'member2' }],
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.assignedMembers).toHaveLength(2)
+    expect(response.body.assignedMembers).toEqual([
+      { username: 'member1' },
+      { username: 'member2' },
+    ])
+    expect(userRepository.findByUsername).toHaveBeenCalledWith('member1')
+    expect(userRepository.findByUsername).toHaveBeenCalledWith('member2')
+    expect(taskRepository.save).toHaveBeenCalled()
+  })
+
+  it('should update task name, description, and assign users in single request', async () => {
+    const assignedUser = User.reconstitute({
+      id: 2,
+      email: 'assignee@example.com',
+      username: 'assignee',
+      password: 'hashedpassword',
+      personId: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    })
+
+    const existingTask = Task.reconstitute({
+      id: taskId,
+      name: 'Old Task Name',
+      description: 'Old description',
+      status: 'pending',
+      priority: 'low',
+      projectId,
+      assignedUserIds: [],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const project = Project.reconstitute({
+      id: projectId,
+      name: 'Test Project',
+      slug: 'test-project',
+      description: null,
+      createdById: userId,
+      memberIds: [],
+      taskIds: [taskId],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const updatedTask = Task.reconstitute({
+      id: taskId,
+      name: 'New Task Name',
+      description: 'New detailed description',
+      status: 'in_progress',
+      priority: 'high',
+      projectId,
+      assignedUserIds: [2],
+      deletedAt: null,
+      createdAt: existingTask.createdAt,
+      updatedAt: new Date(),
+    })
+
+    taskRepository.findById.mockResolvedValue(existingTask)
+    projectRepository.findById.mockResolvedValue(project)
+    userRepository.findByUsername.mockResolvedValue(assignedUser)
+    taskRepository.save.mockResolvedValue(updatedTask)
+
+    const response = await request(app)
+      .patch(`/tasks/${taskId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'New Task Name',
+        description: 'New detailed description',
+        status: 'in_progress',
+        priority: 'high',
+        assignTo: [{ username: 'assignee' }],
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.name).toBe('New Task Name')
+    expect(response.body.description).toBe('New detailed description')
+    expect(response.body.status).toBe('in_progress')
+    expect(response.body.priority).toBe('high')
+    expect(response.body.assignedMembers).toHaveLength(1)
+    expect(response.body.assignedMembers[0].username).toBe('assignee')
+    expect(taskRepository.save).toHaveBeenCalled()
+  })
+
+  it('should handle empty assignTo array', async () => {
+    const existingTask = Task.reconstitute({
+      id: taskId,
+      name: 'Task Name',
+      description: 'Description',
+      status: 'pending',
+      priority: 'low',
+      projectId,
+      assignedUserIds: [2, 3], // Previously had assignments
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const project = Project.reconstitute({
+      id: projectId,
+      name: 'Test Project',
+      slug: 'test-project',
+      description: null,
+      createdById: userId,
+      memberIds: [],
+      taskIds: [taskId],
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    taskRepository.findById.mockResolvedValue(existingTask)
+    projectRepository.findById.mockResolvedValue(project)
+    taskRepository.save.mockResolvedValue(existingTask)
+
+    const response = await request(app)
+      .patch(`/tasks/${taskId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        assignTo: [], // Empty array
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.assignedMembers).toEqual([])
     expect(taskRepository.save).toHaveBeenCalled()
   })
 })

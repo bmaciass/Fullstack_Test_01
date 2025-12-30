@@ -86,6 +86,18 @@ export function errorHandler(
     return
   }
 
+  // Handle JSON parsing errors from express.json()
+  if (err instanceof SyntaxError && 'body' in err) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'BAD_REQUEST',
+        message: 'Invalid JSON format',
+      },
+    })
+    return
+  }
+
   // Default to 500 Internal Server Error
   res.status(500).json({
     success: false,

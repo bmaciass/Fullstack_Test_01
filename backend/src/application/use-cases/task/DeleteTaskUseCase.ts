@@ -30,6 +30,9 @@ export class DeleteTaskUseCase {
     task.delete()
     await this.taskRepository.save(task)
 
+    project.removeTask(task.id)
+    await this.projectRepository.save(project)
+
     return {
       id: task.id,
       message: 'Task deleted successfully',

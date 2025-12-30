@@ -4,10 +4,12 @@ import { Project } from '../../../src/domain/entities/Project'
 import { createTestAppWithProjects } from '../../helpers/createTestAppWithProjects'
 import { generateTestToken } from '../../helpers/generateTestToken'
 import { createMockProjectRepository } from '../../helpers/mockProjectRepository'
+import { createMockUserRepository } from "../../helpers/mockUserRepository"
 
 describe('DELETE /projects/:id - Delete Project', () => {
   const mockProjectRepository = createMockProjectRepository()
-  const app = createTestAppWithProjects(mockProjectRepository)
+  const mockUserRepository = createMockUserRepository()
+  const app = createTestAppWithProjects(mockProjectRepository, mockUserRepository)
 
   beforeEach(() => {
     mockProjectRepository.findById.mockReset()

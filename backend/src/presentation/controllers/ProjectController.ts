@@ -92,18 +92,25 @@ export class ProjectController {
 
       // Parse numeric query params
       if (req.query.limit !== undefined) {
-        const limit = Number(query.limit)
+        const limit = Number(req.query.limit)
         if (Number.isNaN(limit)) {
           throw new BadRequestError('Invalid limit format')
         }
         query.limit = limit
       }
       if (req.query.offset !== undefined) {
-        const offset = Number(query.offset)
+        const offset = Number(req.query.offset)
         if (Number.isNaN(offset)) {
           throw new BadRequestError('Invalid offset format')
         }
         query.offset = offset
+      }
+
+      if (req.query.sortBy) {
+        query.sortBy = req.query.sortBy
+      }
+      if (req.query.sortOrder) {
+        query.sortOrder = req.query.sortOrder
       }
 
       if (req.query.includeDeleted) {

@@ -329,59 +329,6 @@ export class Task {
     this.validate()
   }
 
-  start(): void {
-    if (!this.canBeStarted()) {
-      throw new ValidationError('Task cannot be started')
-    }
-
-    this._status = 'in_progress'
-    this._updatedAt = new Date()
-  }
-
-  moveToReview(): void {
-    if (this._status !== 'in_progress') {
-      throw new ValidationError('Only in-progress tasks can be moved to review')
-    }
-
-    if (this.isDeleted) {
-      throw new ValidationError('Cannot update deleted task')
-    }
-
-    this._status = 'reviewing'
-    this._updatedAt = new Date()
-  }
-
-  complete(): void {
-    if (!this.canBeCompleted()) {
-      throw new ValidationError('Task cannot be completed')
-    }
-
-    this._status = 'completed'
-    this._updatedAt = new Date()
-  }
-
-  archive(): void {
-    if (!this.canBeArchived()) {
-      throw new ValidationError('Only completed tasks can be archived')
-    }
-
-    this._status = 'archived'
-    this._updatedAt = new Date()
-  }
-
-  unarchive(): void {
-    if (!this.isArchived) {
-      throw new ValidationError('Task is not archived')
-    }
-
-    if (this.isDeleted) {
-      throw new ValidationError('Cannot unarchive deleted task')
-    }
-
-    this._status = 'completed'
-    this._updatedAt = new Date()
-  }
-
   delete(): void {
     if (this.isDeleted) {
       throw new ValidationError('Task is already deleted')

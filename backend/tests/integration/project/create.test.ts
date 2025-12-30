@@ -2,12 +2,14 @@ import request from 'supertest'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { Project } from '../../../src/domain/entities/Project'
 import { createMockProjectRepository } from '../../helpers/mockProjectRepository'
+import { createMockUserRepository } from "../../helpers/mockUserRepository"
 import { createTestAppWithProjects } from '../../helpers/createTestAppWithProjects'
 import { generateTestToken } from '../../helpers/generateTestToken'
 
 describe('POST /projects - Create Project', () => {
   const mockProjectRepository = createMockProjectRepository()
-  const app = createTestAppWithProjects(mockProjectRepository)
+  const mockUserRepository = createMockUserRepository()
+  const app = createTestAppWithProjects(mockProjectRepository, mockUserRepository)
 
   beforeEach(() => {
     mockProjectRepository.save.mockReset()

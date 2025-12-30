@@ -1,5 +1,6 @@
 import { compact } from 'lodash-es'
 import { Task } from '../../../domain/entities/Task'
+import { BadRequestError } from '../../../domain/errors/BadRequestError'
 import { ForbiddenError } from '../../../domain/errors/ForbiddenError'
 import { NotFoundError } from '../../../domain/errors/NotFoundError'
 import type { UserRepository } from '../../../domain/repositories'
@@ -34,6 +35,15 @@ export class CreateTaskUseCase {
         )
       : undefined
 
+    // Validate that all users to be assigned are project members
+    if (assignTo && assignTo.length > 0) {
+      for (const user of assignTo) {
+        if (!project.canUserView(user.id)) {
+          throw new BadRequestError('All assigned users must be members of the project')
+        }
+      }
+    }
+
     const task = Task.create({
       name: request.name,
       description: request.description ?? null,
@@ -44,6 +54,9 @@ export class CreateTaskUseCase {
     })
 
     const savedTask = await this.taskRepository.save(task)
+
+    project.addTask(savedTask.id)
+    await this.projectRepository.save(project)
 
     return {
       id: savedTask.id,
