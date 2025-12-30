@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Project {
+  id Int @id @default(autoincrement())
+
+  slug String @unique
+
+  name        String
+  description String? @db.Text
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id], name: "project_createdby_fk")
+
+  tasks   Task[]
+  members User[]
+
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([deletedAt])
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  reviewing
+  completed
+  archived
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+model Task {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String?      @db.Text
+  status      TaskStatus
+  priority    TaskPriority
+
+  projectId Int
+  project   Project @relation(fields: [projectId], references: [id])
+
+  assignedUsers User[]
+
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, projectId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([deletedAt])
+}
+
+model Person {
+  id Int @id @default(autoincrement())
+
+  firstName String
+  lastName  String
+
+  users User[]
+
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deletedAt])
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  email    String @unique
+  username String @unique
+  password String
+
+  personId         Int
+  person           Person    @relation(fields: [personId], references: [id])
+  memberOnProjects Project[]
+  ownedProjects    Project[] @relation(name: "project_createdby_fk")
+  assignedTasks    Task[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@index([personId])
+  @@index([deletedAt])
+}
