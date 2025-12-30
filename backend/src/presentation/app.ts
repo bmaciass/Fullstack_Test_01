@@ -1,6 +1,8 @@
 import cors from 'cors'
 import express, { type Application } from 'express'
 import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
+import { openApiDocument } from '../infrastructure/openapi/generator'
 import { errorHandler } from './middlewares/errorHandler'
 import { authRouter } from './routes/auth.routes'
 import { projectRouter } from './routes/project.routes'
@@ -24,6 +26,12 @@ app.get('/health', (_req, res) => {
     uptime: process.uptime(),
   })
 })
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Task Management API Documentation',
+}))
 
 // Routes
 app.use('/auth', authRouter)
